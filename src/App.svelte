@@ -1,11 +1,8 @@
 <script>
-  import InputBox from "./components/InputBox/InputBox.svelte";
-
-  // import TestBoard from "./components/TestBoard.svelte";
-  // const text = `Lorem ipsum dolor sit, amet consectetur adipisicing elit. Asperiores, cumque maiores voluptatibus tempora exercitationem delectus recusandae praesentium eos. Molestiae ad nulla vitae velit fugit autem consequatur explicabo quis cupiditate omnis!`;
+  import TestBoard from "./components/TestBoard.svelte";
+  const text = `Hello there, how are you doing? Good? Glad to know that. Lorem, ipsum dolor sit amet consectetur adipisicing elit. Necessitatibus, quod!`;
 </script>
 
 <main>
-  <InputBox on:change={(e) => console.log(e.detail)} --txt-clr="red" />
-  <!-- <TestBoard {text} /> -->
+  <TestBoard {text} />
 </main>

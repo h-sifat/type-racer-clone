@@ -121,5 +121,6 @@
     word-spacing: -1px;
     color: var(--txt-clr);
     border: 2px solid currentColor;
+    font-weight: var(--font-weight, 400);
   }
 </style>
