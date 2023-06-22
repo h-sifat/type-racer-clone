@@ -12,7 +12,8 @@
 
 <script lang="ts">
   import "./common.css";
-  import { resetSelection } from "./index";
+  import { ctrlBackspace, resetSelection } from "./index";
+  import type { InputBoxEventMap } from "./interface";
   import { createEventDispatcher, onMount } from "svelte";
 
   //  ----- Types ----------
@@ -25,14 +26,7 @@
   export let maxlength: number = -1;
 
   //  ----- Rest ----------
-  const dispatch = createEventDispatcher<{
-    change: {
-      key: string;
-      value: string;
-      timestamp: number;
-      valueChanged: boolean;
-    };
-  }>();
+  const dispatch = createEventDispatcher<InputBoxEventMap>();
 
   let inputElement: HTMLInputElement;
 
@@ -60,13 +54,23 @@
     const previousValue = e.currentTarget.value;
 
     //  only dispatch the Backspace key event if previous value is not empty
-    if (previousValue && key === "Backspace")
-      dispatch("change", {
+    if (previousValue && key === "Backspace") {
+      e.preventDefault();
+
+      const newValue = e.ctrlKey
+        ? ctrlBackspace(previousValue)
+        : previousValue.slice(0, -1);
+
+      dispatch("keypress", {
+        value: newValue,
         valueChanged: true,
         timestamp: Date.now(),
         key: e.ctrlKey ? "<C-BS>" : "<BS>",
-        value: e.ctrlKey ? "" : previousValue.slice(0, -1),
       });
+
+      value = newValue;
+      inputElement.value = newValue;
+    }
   }
 
   function processKeypress(e: InputEvent) {
@@ -77,13 +81,19 @@
     // it's called "previousValue" because the input value hasn't updated yet
     const previousValue = e.currentTarget.value;
 
-    dispatch("change", {
-      key,
-      timestamp: Date.now(),
-      ...(previousValue.length !== maxlength
-        ? { value: previousValue + key, valueChanged: true }
-        : { value: previousValue, valueChanged: false }),
-    });
+    const shouldContinue = dispatch(
+      "keypress",
+      {
+        key,
+        timestamp: Date.now(),
+        ...(previousValue.length !== maxlength
+          ? { value: previousValue + key, valueChanged: true }
+          : { value: previousValue, valueChanged: false }),
+      },
+      { cancelable: true }
+    );
+
+    if (!shouldContinue) e.preventDefault();
   }
 </script>
 
@@ -91,10 +101,11 @@
   bind:value
   type="text"
   {maxlength}
+  spellcheck="false"
   bind:this={inputElement}
   class="input text-styles"
   on:keydown|trusted={processKeyDown}
-  on:keypress={processKeypress}
+  on:keypress|trusted={processKeypress}
   on:click|preventDefault={resetSelection}
   on:select|preventDefault={resetSelection}
 />
@@ -102,11 +113,12 @@
 <style>
   .input {
     width: 99%;
-    margin: 1em 0;
     outline: none;
     display: block;
     padding: 0.2em;
+    margin-top: 0.7em;
     border-radius: 3px;
+    word-spacing: -1px;
     color: var(--txt-clr);
     border: 2px solid currentColor;
   }
