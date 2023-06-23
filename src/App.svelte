@@ -1,5 +1,5 @@
 <script>
-  import TestBoard from "./components/TestBoard.svelte";
+  import TestBoard from "./components/TestBoard/TestBoard.svelte";
   const text = `Hello there, how are you doing? Good? Glad to know that. Lorem, ipsum dolor sit amet consectetur adipisicing elit. Necessitatibus, quod!`;
 </script>
 

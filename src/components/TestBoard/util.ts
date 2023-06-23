@@ -19,19 +19,22 @@ export interface CurrentWordFormatterClassNames {
   cursorRight: string;
 }
 
+export function getEmptyFormattedCurrentWord() {
+  return {
+    wordChars: [],
+    hasTypo: false,
+    canTypeMore: true,
+    trailingSpaceClass: "",
+  };
+}
+
 export function makeFormatCurrentWord(
   factoryArg: CurrentWordFormatterClassNames
 ): FormatCurrentWord {
   const { match, noMatch, cursorLeft, cursorRight } = factoryArg;
 
   return function formattedCurrentWord({ input, word }) {
-    if (!word.length)
-      return {
-        wordChars: [],
-        hasTypo: false,
-        canTypeMore: true,
-        trailingSpaceClass: "",
-      };
+    if (!word.length) return getEmptyFormattedCurrentWord();
 
     const allChars: FormattedChar[] = (word + " ")
       .split("")
@@ -53,7 +56,7 @@ export function makeFormatCurrentWord(
     return {
       hasTypo: hasError,
       wordChars: allChars.slice(0, -1),
-      canTypeMore: input.length < word.length,
+      canTypeMore: input.length <= word.length,
       trailingSpaceClass: allChars.at(allChars.length - 1).className,
     };
   };

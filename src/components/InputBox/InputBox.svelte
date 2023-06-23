@@ -112,7 +112,6 @@
 
 <style>
   .input {
-    width: 99%;
     outline: none;
     display: block;
     padding: 0.2em;
@@ -121,6 +120,7 @@
     word-spacing: -1px;
     color: var(--txt-clr);
     border: 2px solid currentColor;
+    width: var(--input-width, 100%);
     font-weight: var(--font-weight, 400);
   }
 </style>
