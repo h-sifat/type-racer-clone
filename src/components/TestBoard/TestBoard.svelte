@@ -4,6 +4,7 @@
 
   import { tick } from "svelte";
   import Text from "./Text.svelte";
+  import Progress from "./Progress.svelte";
   import InputBox from "../InputBox/InputBox.svelte";
   import { splitTextIntoWords, formatCurrentWord, lastIndex } from "./util";
 
@@ -115,6 +116,9 @@
 </script>
 
 <div class="wrapper">
+  <div class="status">
+    <Progress {progress} />
+  </div>
   <Text
     {afterText}
     {beforeText}
@@ -163,6 +167,12 @@
     --typo-color: #803333;
     --matched-color: #99cc00;
     --typo-bg-color: #f0a3a3;
+  }
+
+  .status {
+    height: 2em;
+    margin-top: 0.2em;
+    margin-bottom: 0.7em;
   }
 
   .message {
