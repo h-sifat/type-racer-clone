@@ -12,23 +12,30 @@
 
 <script lang="ts">
   import "./common.css";
-  import { ctrlBackspace, resetSelection } from "./index";
   import type { InputBoxEventMap } from "./interface";
   import { createEventDispatcher, onMount } from "svelte";
+  import { ctrlBackspace, resetSelection } from "./index";
 
   //  ----- Types ----------
   type InputEvent = KeyboardEvent & {
     currentTarget: EventTarget & HTMLInputElement;
   };
 
+  // ----- States ----------
+  let inputElement: HTMLInputElement;
+
   // ------ Props -----------
   export let value = "";
+  export let disabled = false;
   export let maxlength: number = -1;
+  export let placeholder = "Type here...";
+
+  export function focus() {
+    if (inputElement) inputElement.focus();
+  }
 
   //  ----- Rest ----------
   const dispatch = createEventDispatcher<InputBoxEventMap>();
-
-  let inputElement: HTMLInputElement;
 
   onMount(() => {
     inputElement.onpaste = (e) => e.preventDefault();
@@ -36,6 +43,8 @@
   });
 
   function processKeyDown(e: InputEvent) {
+    if (disabled) return void e.preventDefault();
+
     resetSelection(e);
 
     const { key } = e;
@@ -74,6 +83,8 @@
   }
 
   function processKeypress(e: InputEvent) {
+    if (disabled) return void e.preventDefault();
+
     const { key } = e;
 
     if (key.length !== 1) return void e.preventDefault();
@@ -98,9 +109,13 @@
 </script>
 
 <input
+  on:blur
+  on:focus
   bind:value
+  {disabled}
   type="text"
   {maxlength}
+  {placeholder}
   spellcheck="false"
   bind:this={inputElement}
   class="input text-styles"
@@ -122,5 +137,20 @@
     border: 2px solid currentColor;
     width: var(--input-width, 100%);
     font-weight: var(--font-weight, 400);
+
+    border-style: dashed;
+  }
+
+  input:focus {
+    border-style: solid;
+  }
+
+  input::selection {
+    background-color: transparent;
+  }
+
+  input:focus::placeholder,
+  input:disabled::placeholder {
+    color: transparent;
   }
 </style>
