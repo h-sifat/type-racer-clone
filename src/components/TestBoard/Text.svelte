@@ -1,3 +1,23 @@
+<script lang="ts" context="module">
+  import type { CharState } from "./interface";
+
+  const charStateToClassMap = Object.freeze({
+    incorrect: "typo",
+    correct: "matched",
+  });
+
+  function getCharClass(states: CharState[], hasFocus: boolean) {
+    if (!hasFocus)
+      states = states.filter((state) => !state.startsWith("cursor"));
+
+    return states
+      .map((state) =>
+        state in charStateToClassMap ? charStateToClassMap[state] : state
+      )
+      .join(" ");
+  }
+</script>
+
 <script lang="ts">
   import "../InputBox/common.css";
   import { getEmptyFormattedCurrentWord } from "./util";
@@ -5,20 +25,23 @@
   export let afterText = "";
   export let beforeText = "";
   export let isLastWord = false;
+  export let isInputFocused: boolean;
   export let formattedWord = getEmptyFormattedCurrentWord();
 </script>
 
 <div class="text text-styles">
-  <span class="match">
+  <span class="matched">
     {beforeText}
   </span>
   <span class="current-word">
-    {#each formattedWord.wordChars as { char, className }}
-      <span class={className}>{char}</span>
+    {#each formattedWord.wordChars as { char, states }}
+      <span class={getCharClass(states, isInputFocused)}>{char}</span>
     {/each}
   </span>
   {#if !isLastWord}
-    <span class={formattedWord.trailingSpaceClass} />
+    <span
+      class={getCharClass(formattedWord.trailingSpaceStates, isInputFocused)}
+    />
   {/if}
   {afterText}
 </div>
@@ -28,15 +51,16 @@
     padding: 0.2em;
     border-radius: 3px;
     background-color: #eee;
+    user-select: none;
   }
 
-  .match {
-    color: var(--match-color);
+  .matched {
+    color: var(--matched-color);
   }
 
-  .no-match {
-    color: var(--nomatch-color);
-    background: var(--nomatch-bg-color);
+  .typo {
+    color: var(--typo-color);
+    background: var(--typo-bg-color);
   }
 
   .cursor-right {

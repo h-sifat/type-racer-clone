@@ -1,71 +1,101 @@
-<script context="module" lang="ts">
+<script lang="ts">
   import type { InputBoxEventMap } from "../InputBox/interface";
 
-  import { makeFormatCurrentWord } from "./util";
-
-  // the following class names are taken from "./Text.svelte" module
-  const formatCurrentWord = makeFormatCurrentWord({
-    match: "match",
-    noMatch: "no-match",
-    cursorLeft: "cursor-left",
-    cursorRight: "cursor-right",
-  });
-
-  const noMatchBgColor = "#f0a3a3";
-</script>
-
-<script lang="ts">
-  import "../InputBox/common.css";
+  import { tick } from "svelte";
   import Text from "./Text.svelte";
-  import ErrorMessage from "./ErrorMessage.svelte";
   import InputBox from "../InputBox/InputBox.svelte";
+  import { splitTextIntoWords, formatCurrentWord, lastIndex } from "./util";
 
-  let inputValue: string;
+  const typoBgColor = "#f0a3a3";
+
+  // ------ Props --------
   export let text: string;
-  const wordsArray = text.split(" ");
+  export let onComplete: () => void;
 
+  // ------ States --------
+  let message = "";
+  let progress = 0;
+  let afterText = "";
+  let beforeText = "";
+  let isRunning = false;
   let currentWordIdx = 0;
-  let currentWord = "";
+  let inputBox: InputBox;
+  let inputValue: string;
+  let isInputFocused: boolean;
+  let hasAnyKeyBeenPressed = false;
   let formattedWord = formatCurrentWord({ word: "", input: "" });
 
-  let beforeText = "",
-    afterText = "";
+  // ------ Props --------
+  export async function start() {
+    isRunning = true;
+    message = "Test started, please type in the box below.";
 
-  $: {
-    currentWord = wordsArray[currentWordIdx];
+    // wait for the inputBox to be enabled
+    await tick();
 
-    formattedWord = formatCurrentWord({
-      input: "",
-      word: wordsArray[currentWordIdx],
-    });
-
-    beforeText = wordsArray.slice(0, currentWordIdx).join(" ");
-    afterText = wordsArray.slice(currentWordIdx + 1).join(" ");
+    inputBox.focus();
   }
 
-  function procressInputEvent(
-    event: CustomEvent<InputBoxEventMap["keypress"]>
-  ) {
-    const { key, timestamp, value: input } = event.detail;
+  export function setMessage(arg: { message: string }) {
+    message = arg.message;
+  }
 
-    if (key === " " && input === wordsArray[currentWordIdx] + " ") {
-      event.preventDefault();
+  export function end(arg: { message?: string }) {
+    inputValue = "";
+    isRunning = false;
+    if (arg.message) message = arg.message;
+  }
 
-      currentWordIdx++;
-      inputValue = "";
-    } else
-      formattedWord = formatCurrentWord({
-        input,
-        word: wordsArray[currentWordIdx],
-      });
+  // ----- Derived States -----------
+  let currentWord = "";
+  const { words } = splitTextIntoWords(text);
+  const lastWordIndex = lastIndex(words);
+
+  $: {
+    if (currentWordIdx)
+      progress = Math.floor(((currentWordIdx - 1) / lastWordIndex) * 100);
+
+    currentWord = words[currentWordIdx];
+    formattedWord = formatCurrentWord({ input: "", word: currentWord });
+
+    beforeText = words.slice(0, currentWordIdx).join(" ");
+    afterText = words.slice(currentWordIdx + 1).join(" ");
   }
 
   $: isSeriousTypo = formattedWord.hasTypo && !formattedWord.canTypeMore;
   $: inputBoxTextColor = formattedWord.hasTypo
     ? formattedWord.canTypeMore
-      ? noMatchBgColor
+      ? typoBgColor
       : "red"
     : "";
+
+  // --------- Functions -----------
+  function procressInputEvent(
+    event: CustomEvent<InputBoxEventMap["keypress"]>
+  ) {
+    if (!hasAnyKeyBeenPressed) {
+      hasAnyKeyBeenPressed = true;
+      // remove the initial message
+      message = "";
+    }
+
+    const { key, value: input } = event.detail;
+
+    if (key === " " && input === words[currentWordIdx] + " ") {
+      event.preventDefault();
+
+      if (currentWordIdx < lastWordIndex) currentWordIdx++;
+      else {
+        message = "Done.";
+        isRunning = false;
+        progress = 100;
+
+        onComplete();
+      }
+
+      inputValue = "";
+    } else formattedWord = formatCurrentWord({ input, word: currentWord });
+  }
 </script>
 
 <div class="wrapper">
@@ -73,23 +103,36 @@
     {afterText}
     {beforeText}
     {formattedWord}
-    isLastWord={currentWordIdx === wordsArray.length - 1}
+    {isInputFocused}
+    isLastWord={currentWordIdx === lastWordIndex}
   />
 
-  <ErrorMessage {currentWord} isTypo={isSeriousTypo} />
+  <div class="message">
+    {#if message}
+      {message}
+    {:else if isSeriousTypo}
+      Please type <span class="pill">{currentWord}</span> correctly to continue.
+    {:else}
+      &nbsp;
+    {/if}
+  </div>
 
   <InputBox
-    bind:value={inputValue}
-    on:keypress={procressInputEvent}
-    maxlength={currentWord.length + 1}
+    bind:this={inputBox}
     --input-width="98.5%"
+    bind:value={inputValue}
+    disabled={!isRunning}
     --txt-clr={inputBoxTextColor}
+    on:keypress={procressInputEvent}
+    maxlength={currentWord?.length + 1}
     --font-weight={isSeriousTypo ? 900 : ""}
+    on:blur={() => (isInputFocused = false)}
+    on:focus={() => (isInputFocused = true)}
   />
 
   <p class="tip">
     <span>Tip:</span> Hit <kbd class="pill">Ctrl + Backspace</kbd> to delete a whole
-    word
+    word.
   </p>
 </div>
 
@@ -101,9 +144,14 @@
     padding: 0.9em;
     border-radius: 5px;
 
-    --match-color: #99cc00;
-    --nomatch-bg-color: #f0a3a3;
-    --nomatch-color: #803333;
+    --typo-color: #803333;
+    --matched-color: #99cc00;
+    --typo-bg-color: #f0a3a3;
+  }
+
+  .message {
+    margin-top: 0.7em;
+    text-align: center;
   }
 
   /*  ---Tip---    */
