@@ -3,6 +3,7 @@ export interface InputBoxEventMap {
     key: string;
     value: string;
     timestamp: number;
+    printable?: boolean;
     valueChanged: boolean;
   };
 }

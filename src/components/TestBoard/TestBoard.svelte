@@ -1,4 +1,5 @@
 <script lang="ts">
+  import type { KeypressLog } from "./interface";
   import type { InputBoxEventMap } from "../InputBox/interface";
 
   import { tick } from "svelte";
@@ -11,6 +12,7 @@
   // ------ Props --------
   export let text: string;
   export let onComplete: () => void;
+  export let onKeypress: (log: KeypressLog) => void;
 
   // ------ States --------
   let message = "";
@@ -48,7 +50,7 @@
 
   // ----- Derived States -----------
   let currentWord = "";
-  const { words } = splitTextIntoWords(text);
+  const { words, startIndices } = splitTextIntoWords(text);
   const lastWordIndex = lastIndex(words);
 
   $: {
@@ -70,9 +72,7 @@
     : "";
 
   // --------- Functions -----------
-  function procressInputEvent(
-    event: CustomEvent<InputBoxEventMap["keypress"]>
-  ) {
+  function processInputEvent(event: CustomEvent<InputBoxEventMap["keypress"]>) {
     if (!hasAnyKeyBeenPressed) {
       hasAnyKeyBeenPressed = true;
       // remove the initial message
@@ -81,7 +81,23 @@
 
     const { key, value: input } = event.detail;
 
-    if (key === " " && input === words[currentWordIdx] + " ") {
+    // Log keypress
+    {
+      const { timestamp, printable = true } = event.detail;
+
+      const keyPressLog = { key, timestamp, printable };
+      const textCharIndex = startIndices[currentWordIdx] + input.length - 1;
+
+      if (printable)
+        Object.assign(keyPressLog, {
+          textCharIndex,
+          matched: text[textCharIndex] === key,
+        });
+
+      onKeypress(keyPressLog as KeypressLog);
+    }
+
+    if (key === " " && input === currentWord + " ") {
       event.preventDefault();
 
       if (currentWordIdx < lastWordIndex) currentWordIdx++;
@@ -123,7 +139,7 @@
     bind:value={inputValue}
     disabled={!isRunning}
     --txt-clr={inputBoxTextColor}
-    on:keypress={procressInputEvent}
+    on:keypress={processInputEvent}
     maxlength={currentWord?.length + 1}
     --font-weight={isSeriousTypo ? 900 : ""}
     on:blur={() => (isInputFocused = false)}

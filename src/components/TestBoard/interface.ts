@@ -1,18 +1,16 @@
-interface Keypress {
-  key: string;
-  timestamp: number;
-}
+type Keypress = { key: string; timestamp: number };
 
-export interface CharKeypressLog extends Keypress {
+export interface PrintableKeypressLog extends Keypress {
+  printable: true;
   matched: boolean;
   textCharIndex: number;
 }
 
-export interface NonCharKeypressLog extends Keypress {
-  nonChar: true;
+export interface NonPrintableKeypressLog extends Keypress {
+  printable: false;
 }
 
-export type KeypressLog = CharKeypressLog | NonCharKeypressLog;
+export type KeypressLog = PrintableKeypressLog | NonPrintableKeypressLog;
 
 export type CharState =
   | "correct"

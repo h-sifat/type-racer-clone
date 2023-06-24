@@ -72,6 +72,7 @@
 
       dispatch("keypress", {
         value: newValue,
+        printable: false,
         valueChanged: true,
         timestamp: Date.now(),
         key: e.ctrlKey ? "<C-BS>" : "<BS>",
@@ -83,11 +84,8 @@
   }
 
   function processKeypress(e: InputEvent) {
-    if (disabled) return void e.preventDefault();
-
     const { key } = e;
-
-    if (key.length !== 1) return void e.preventDefault();
+    if (disabled || key.length !== 1) return void e.preventDefault();
 
     // it's called "previousValue" because the input value hasn't updated yet
     const previousValue = e.currentTarget.value;
@@ -96,6 +94,7 @@
       "keypress",
       {
         key,
+        printable: true,
         timestamp: Date.now(),
         ...(previousValue.length !== maxlength
           ? { value: previousValue + key, valueChanged: true }
