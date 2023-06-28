@@ -26,3 +26,19 @@ export type FormattedCurrentWord = {
   wordChars: FormattedChar[];
   trailingSpaceStates: CharState[];
 };
+
+export interface WPMState {
+  netWPM: number;
+  grossWPM: number;
+  accuracy: number;
+
+  _cache: {
+    startTime: number;
+    totalKeyCount: number;
+    matchedKeyCount: number;
+  };
+}
+
+export type WPMCalculatorReducerActions =
+  | { name: "keypress"; arg: KeypressLog }
+  | { name: "time_increase"; arg: { endTime: number } };

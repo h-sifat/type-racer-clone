@@ -12,6 +12,7 @@
   const typoBgColor = "#f0a3a3";
 
   // ------ Props --------
+  export let wpm: number;
   export let text: string;
   export let onComplete: () => void;
   export let remainingTimeMS: number;
@@ -120,7 +121,7 @@
 <div class="wrapper">
   <div class="statuses">
     <Progress {progress} />
-    <Status {remainingTimeMS} />
+    <Status {remainingTimeMS} {wpm} />
   </div>
   <Text
     {afterText}

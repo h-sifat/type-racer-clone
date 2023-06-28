@@ -1,4 +1,12 @@
-import type { FormattedChar, FormattedCurrentWord } from "./interface";
+import type {
+  WPMState,
+  FormattedChar,
+  FormattedCurrentWord,
+  WPMCalculatorReducerActions,
+} from "./interface";
+
+const MS_IN_MINUTE = 60 * 1000;
+const AVERAGE_WORD_LENGTH = 5;
 
 export function getEmptyFormattedCurrentWord(): FormattedCurrentWord {
   return {
@@ -88,4 +96,78 @@ export function splitTextIntoWords(text: string): {
 
 export function lastIndex(value: string | any[]) {
   return value.length - 1;
+}
+
+function calculateAccuracy(arg: Pick<WPMState, "netWPM" | "grossWPM">) {
+  const { netWPM, grossWPM } = arg;
+  return Math.floor((netWPM / grossWPM) * 100);
+}
+
+function calculateWPM(
+  arg: Record<"keyCount" | "startTime" | "endTime", number>
+) {
+  const { endTime, startTime, keyCount } = arg;
+
+  const timeInMinute = (endTime - startTime) / MS_IN_MINUTE;
+  return Math.floor(keyCount / AVERAGE_WORD_LENGTH / timeInMinute);
+}
+
+export function WPMCalculatorReducer(
+  state: WPMState,
+  action: WPMCalculatorReducerActions
+): WPMState {
+  const { name, arg } = action;
+  const { startTime } = state._cache;
+  let { matchedKeyCount, totalKeyCount } = state._cache;
+
+  switch (name) {
+    case "keypress": {
+      if (!arg.printable) return state;
+
+      const { matched, timestamp: endTime } = arg;
+
+      totalKeyCount++;
+      if (matched) matchedKeyCount++;
+
+      const [netWPM, grossWPM] = [totalKeyCount, matchedKeyCount].map(
+        (keyCount) => calculateWPM({ endTime, keyCount, startTime })
+      );
+
+      return {
+        netWPM,
+        grossWPM,
+        accuracy: calculateAccuracy({ netWPM, grossWPM }),
+        _cache: { totalKeyCount, matchedKeyCount, startTime },
+      };
+    }
+
+    case "time_increase":
+      const { endTime } = arg;
+
+      // @TODO remove duplicate logic
+      const [netWPM, grossWPM] = [totalKeyCount, matchedKeyCount].map(
+        (keyCount) => calculateWPM({ endTime, keyCount, startTime })
+      );
+
+      return {
+        netWPM,
+        grossWPM,
+        _cache: state._cache,
+        accuracy: calculateAccuracy({ netWPM, grossWPM }),
+      };
+
+    default:
+      throw new Error(`Invalid action.`);
+  }
+}
+
+export function getDefaultWPMState(arg: { startTime: number }): WPMState {
+  const { startTime } = arg;
+
+  return {
+    netWPM: 0,
+    accuracy: 0,
+    grossWPM: 0,
+    _cache: { matchedKeyCount: 0, startTime, totalKeyCount: 0 },
+  };
 }

@@ -29,7 +29,7 @@
     <Gauge />
   </div>
   <div>
-    <span class="value">{wpm || "--"} wpm</span>
+    <span class="value">{wpm || "0"} wpm</span>
   </div>
 </div>
 

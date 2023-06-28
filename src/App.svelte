@@ -17,9 +17,13 @@
 </script>
 
 <script lang="ts">
-  import type { KeypressLog } from "./components/TestBoard/interface";
+  import type { KeypressLog, WPMState } from "./components/TestBoard/interface";
 
   import TestBoard from "./components/TestBoard/TestBoard.svelte";
+  import {
+    getDefaultWPMState,
+    WPMCalculatorReducer,
+  } from "./components/TestBoard/util";
 
   let elapsedTime = 0;
   let textBoardKey = 0;
@@ -27,16 +31,28 @@
   let testBoard: TestBoard;
   let startTime: number, endTime: number;
   let btnState: ButtonState = "not_started";
+  let wpmState: WPMState | null = null;
+  let wpm = 0;
 
   function tick() {
+    const timestamp = Date.now();
     elapsedTime += 1000;
 
     if (elapsedTime >= testDuration) {
       clearInterval(intervalId);
 
-      endTime = Date.now();
+      endTime = timestamp;
       btnState = "stopped";
       if (testBoard) testBoard.setMessage({ message: "Time up" });
+    }
+
+    if (elapsedTime && elapsedTime % 5_000 === 0) {
+      wpmState = WPMCalculatorReducer(wpmState!, {
+        name: "time_increase",
+        arg: { endTime: timestamp },
+      });
+
+      wpm = wpmState.netWPM;
     }
   }
 
@@ -44,6 +60,7 @@
     switch (btnState) {
       case "not_started":
         startTime = Date.now();
+        wpmState = getDefaultWPMState({ startTime });
         testBoard.start();
         btnState = "running";
         intervalId = setInterval(tick, 1000);
@@ -60,6 +77,7 @@
         textBoardKey++;
         btnState = "not_started";
         elapsedTime = 0;
+        wpm = 0;
         break;
     }
   }
@@ -72,7 +90,7 @@
   }
 
   function onKeypress(log: KeypressLog) {
-    // console.log(log);
+    wpmState = WPMCalculatorReducer(wpmState!, { name: "keypress", arg: log });
   }
 </script>
 
@@ -81,6 +99,7 @@
     <TestBoard
       bind:this={testBoard}
       {...{
+        wpm,
         text,
         onComplete,
         onKeypress,
