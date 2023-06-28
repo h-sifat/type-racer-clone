@@ -4,6 +4,7 @@
 
   import { tick } from "svelte";
   import Text from "./Text.svelte";
+  import Status from "./Status.svelte";
   import Progress from "./Progress.svelte";
   import InputBox from "../InputBox/InputBox.svelte";
   import { splitTextIntoWords, formatCurrentWord, lastIndex } from "./util";
@@ -13,6 +14,7 @@
   // ------ Props --------
   export let text: string;
   export let onComplete: () => void;
+  export let remainingTimeMS: number;
   export let onKeypress: (log: KeypressLog) => void;
 
   // ------ States --------
@@ -116,8 +118,9 @@
 </script>
 
 <div class="wrapper">
-  <div class="status">
+  <div class="statuses">
     <Progress {progress} />
+    <Status {remainingTimeMS} />
   </div>
   <Text
     {afterText}
@@ -169,10 +172,11 @@
     --typo-bg-color: #f0a3a3;
   }
 
-  .status {
-    height: 2em;
+  .statuses {
+    height: 2.5rem;
     margin-top: 0.2em;
     margin-bottom: 0.7em;
+    display: flex;
   }
 
   .message {
