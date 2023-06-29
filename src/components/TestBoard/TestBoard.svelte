@@ -7,6 +7,7 @@
   import Status from "./Status.svelte";
   import Progress from "./Progress.svelte";
   import InputBox from "../InputBox/InputBox.svelte";
+  import completer from "../../common/util/completer";
   import { splitTextIntoWords, formatCurrentWord, lastIndex } from "./util";
 
   const typoBgColor = "#f0a3a3";
@@ -25,7 +26,8 @@
   let beforeText = "";
   let isRunning = false;
   let currentWordIdx = 0;
-  let inputBox: InputBox;
+  // let inputBox = InputBox;
+  let inputElement = completer<HTMLInputElement>();
   let inputValue: string;
   let isInputFocused: boolean;
   let hasAnyKeyBeenPressed = false;
@@ -34,12 +36,17 @@
   // ------ Props --------
   export async function start() {
     isRunning = true;
+    progress = 0;
+    currentWordIdx = 0;
+    beforeText = "";
+
     message = "Test started, please type in the box below.";
 
     // wait for the inputBox to be enabled
-    await tick();
+    // await tick();
 
-    inputBox.focus();
+    //if start is called before the inputElement is obtained, focus will be called when the inputElement is obtained
+    inputElement.promise.then((node) => node.focus());
   }
 
   export function setMessage(arg: { message: string }) {
@@ -54,8 +61,13 @@
 
   // ----- Derived States -----------
   let currentWord = "";
-  const { words, startIndices } = splitTextIntoWords(text);
-  const lastWordIndex = lastIndex(words);
+  // let words: string[] = [];
+  // let startIndices: number[] = [];
+  let { words, startIndices } = splitTextIntoWords(text);
+  $: words = splitTextIntoWords(text).words;
+  $: startIndices = splitTextIntoWords(text).startIndices;
+  let lastWordIndex: number = lastIndex(words);
+  $: lastWordIndex = lastIndex(words);
 
   $: {
     if (currentWordIdx)
@@ -142,7 +154,7 @@
   </div>
 
   <InputBox
-    bind:this={inputBox}
+    on:inputElementCreated={(node) => inputElement.resolve(node.detail)}
     --input-width="98.5%"
     bind:value={inputValue}
     disabled={!isRunning}
