@@ -21,26 +21,30 @@
     currentTarget: EventTarget & HTMLInputElement;
   };
 
-  // ----- States ----------
-  let inputElement: HTMLInputElement;
-
   // ------ Props -----------
   export let value = "";
   export let disabled = false;
   export let maxlength: number = -1;
   export let placeholder = "Type here...";
 
-  export function focus() {
-    if (inputElement) inputElement.focus();
-  }
+  // export function focus() {
+  //   // if(inputElement) inputElement.focus();
+  // }
 
   //  ----- Rest ----------
   const dispatch = createEventDispatcher<InputBoxEventMap>();
+  const dispatchElementNode = createEventDispatcher();
 
-  onMount(() => {
-    inputElement.onpaste = (e) => e.preventDefault();
-    inputElement.oncut = (e) => e.preventDefault();
-  });
+  // ----- States ----------
+  let inputElement: HTMLInputElement;
+  const onInputElementCreated = (node: HTMLInputElement) => {
+    dispatchElementNode("inputElementCreated", node);
+  };
+
+  // onMount(() => {
+  //   inputElement.onpaste = (e) => e.preventDefault();
+  //   inputElement.oncut = (e) => e.preventDefault();
+  // });
 
   function processKeyDown(e: InputEvent) {
     if (disabled) return void e.preventDefault();
@@ -111,12 +115,15 @@
   on:blur
   on:focus
   bind:value
+  bind:this={inputElement}
   {disabled}
   type="text"
   {maxlength}
   {placeholder}
   spellcheck="false"
-  bind:this={inputElement}
+  use:onInputElementCreated
+  on:cut|preventDefault
+  on:paste|preventDefault
   class="input text-styles"
   on:keydown|trusted={processKeyDown}
   on:keypress|trusted={processKeypress}
